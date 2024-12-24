@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 export const syncUser = mutation({
   args: {
@@ -11,15 +11,30 @@ export const syncUser = mutation({
     const existingUser = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("userId"), args.userId))
-          .first();
-      
-      if (!existingUser) {
-        await ctx.db.insert("users", {
-          userId: args.userId,
-          email: args.email,
-          name: args.name,
-          isPro:false
-        })
-      }
+      .first();
+
+    if (!existingUser) {
+      await ctx.db.insert("users", {
+        userId: args.userId,
+        email: args.email,
+        name: args.name,
+        isPro: false,
+      });
+    }
+  },
+});
+
+export const getUser = query({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!args.userId) return null;
+    return (
+      (await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("userId"), args.userId))
+        .first()) || null
+    );
   },
 });
