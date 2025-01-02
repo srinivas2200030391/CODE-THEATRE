@@ -1,7 +1,30 @@
-import { CodeEditorState } from "./../types/index";
-import { LANGUAGE_CONFIG } from "@/app/(root)/_constants";
 import { create } from "zustand";
-import { Monaco } from "@monaco-editor/react";
+import type * as Monaco from "monaco-editor/esm/vs/editor/editor.api";
+import { LANGUAGE_CONFIG } from "@/app/(root)/_constants";
+
+// Define the store state type
+export interface CodeEditorState {
+  language: string;
+  theme: string;
+  fontSize: number;
+  output: string;
+  isRunning: boolean;
+  error: string | null;
+  editor: Monaco.editor.IStandaloneCodeEditor | null;
+  executionResult: {
+    code: string;
+    output: string;
+    error: string | null;
+  } | null;
+
+  // Methods
+  getCode: () => string;
+  setEditor: (editor: Monaco.editor.IStandaloneCodeEditor) => void;
+  setTheme: (theme: string) => void;
+  setFontSize: (fontSize: number) => void;
+  setLanguage: (language: string) => void;
+  runCode: (userInput?: string) => Promise<void>;
+}
 
 const getInitialState = () => {
   // if we're on the server, return default values
@@ -13,10 +36,10 @@ const getInitialState = () => {
     };
   }
 
-  // if we're on the client, return values from local storage bc localStorage is a browser API.
+  // if we're on the client, return values from local storage
   const savedLanguage = localStorage.getItem("editor-language") || "javascript";
   const savedTheme = localStorage.getItem("editor-theme") || "vs-dark";
-  const savedFontSize = localStorage.getItem("editor-font-size") || 16;
+  const savedFontSize = localStorage.getItem("editor-font-size") || "16";
 
   return {
     language: savedLanguage,
@@ -36,12 +59,16 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
     editor: null,
     executionResult: null,
 
-    getCode: () => get().editor?.getValue() || "",
+    getCode: () => get().editor?.getModel()?.getValue() || "",
 
-    setEditor: (editor: Monaco) => {
+    setEditor: (editor: Monaco.editor.IStandaloneCodeEditor) => {
       const savedCode = localStorage.getItem(`editor-code-${get().language}`);
-      if (savedCode) editor.setValue(savedCode);
-
+      if (savedCode) {
+        const model = editor.getModel();
+        if (model) {
+          model.setValue(savedCode);
+        }
+      }
       set({ editor });
     },
 
@@ -57,7 +84,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
     setLanguage: (language: string) => {
       // Save current language code before switching
-      const currentCode = get().editor?.getValue();
+      const currentCode = get().getCode();
       if (currentCode) {
         localStorage.setItem(`editor-code-${get().language}`, currentCode);
       }
@@ -77,7 +104,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
       if (!code) {
         set({ error: "Please enter some code" });
-        console.error("Error:", "Please enter some code"); // Log error
+        console.error("Error: Please enter some code");
         return;
       }
 
@@ -110,7 +137,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
             error: data.message,
             executionResult: { code, output: "", error: data.message },
           });
-          console.error("Error:", data.message); // Log error
+          console.error("Error:", data.message);
           return;
         }
 
@@ -131,7 +158,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
           error: errorMessage,
           executionResult: { code, output: "", error: errorMessage },
         });
-        console.error("Error:", errorMessage); // Log error
+        console.error("Error:", errorMessage);
       } finally {
         set({ isRunning: false });
       }

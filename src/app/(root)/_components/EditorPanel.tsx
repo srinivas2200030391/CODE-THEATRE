@@ -3,6 +3,7 @@ import { useCodeEditorStore } from "@/store/useCodeEditorStore";
 import { useEffect, useState } from "react";
 import { defineMonacoThemes, LANGUAGE_CONFIG } from "../_constants";
 import { Editor } from "@monaco-editor/react";
+import type * as Monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { RotateCcwIcon, ShareIcon, TypeIcon } from "lucide-react";
@@ -20,9 +21,13 @@ function EditorPanel() {
   const mounted = useMounted();
 
   useEffect(() => {
+    if (!editor) return;
     const savedCode = localStorage.getItem(`editor-code-${language}`);
     const newCode = savedCode || LANGUAGE_CONFIG[language].defaultCode;
-    if (editor) editor.setValue(newCode);
+    const model = editor.getModel();
+    if (model) {
+      model.setValue(newCode);
+    }
   }, [language, editor]);
 
   useEffect(() => {
@@ -31,8 +36,12 @@ function EditorPanel() {
   }, [setFontSize]);
 
   const handleRefresh = () => {
+    if (!editor) return;
     const defaultCode = LANGUAGE_CONFIG[language].defaultCode;
-    if (editor) editor.setValue(defaultCode);
+    const model = editor.getModel();
+    if (model) {
+      model.setValue(defaultCode);
+    }
     localStorage.removeItem(`editor-code-${language}`);
   };
 
@@ -46,6 +55,10 @@ function EditorPanel() {
     localStorage.setItem("editor-font-size", size.toString());
   };
 
+  const handleEditorMount = (editor: Monaco.editor.IStandaloneCodeEditor) => {
+    setEditor(editor);
+  };
+
   if (!mounted) return null;
 
   return (
@@ -57,7 +70,7 @@ function EditorPanel() {
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1e1e2e] ring-1 ring-white/5">
               <Image
                 src={"/" + language + ".png"}
-                alt="Logo"
+                alt={`${language} logo`}
                 width={24}
                 height={24}
               />
@@ -107,13 +120,13 @@ function EditorPanel() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg overflow-hidden bg-gradient-to-r
                from-blue-500 to-blue-600 opacity-90 hover:opacity-100 transition-opacity">
               <ShareIcon className="size-4 text-white" />
-              <span className="text-sm font-medium text-white ">Share</span>
+              <span className="text-sm font-medium text-white">Share</span>
             </motion.button>
           </div>
         </div>
 
-        {/* Editor  */}
-        <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05] ">
+        {/* Editor */}
+        <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05]">
           {clerk.loaded && (
             <Editor
               height="750px"
@@ -121,7 +134,7 @@ function EditorPanel() {
               onChange={handleEditorChange}
               theme={theme}
               beforeMount={defineMonacoThemes}
-              onMount={(editor) => setEditor(editor)}
+              onMount={handleEditorMount}
               options={{
                 minimap: { enabled: true },
                 fontSize,
@@ -155,4 +168,5 @@ function EditorPanel() {
     </div>
   );
 }
+
 export default EditorPanel;
