@@ -77,10 +77,10 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
       if (!code) {
         set({ error: "Please enter some code" });
+        console.error("Error:", "Please enter some code"); // Log error
         return;
       }
 
-      // Detect if the program requires input
       const requiresInput =
         code.includes("input") ||
         code.includes("Scanner") ||
@@ -110,6 +110,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
             error: data.message,
             executionResult: { code, output: "", error: data.message },
           });
+          console.error("Error:", data.message); // Log error
           return;
         }
 
@@ -125,13 +126,14 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
           },
         });
       } catch (error) {
+        const errorMessage = "Error running code";
         set({
-          error: "Error running code",
-          executionResult: { code, output: "", error: "Error running code" },
+          error: errorMessage,
+          executionResult: { code, output: "", error: errorMessage },
         });
+        console.error("Error:", errorMessage); // Log error
       } finally {
         set({ isRunning: false });
-        //setNeedsInput(requiresInput); // Dynamically toggle input
       }
     },
   };
