@@ -24,17 +24,22 @@ export interface LanguageRuntime {
 export interface ExecuteCodeResponse {
   compile?: {
     output: string;
+    code?: number;
+    stderr?: string;
   };
   run?: {
     output: string;
     stderr: string;
+    code?: number;
   };
+  message?: string;
 }
 
 export interface ExecutionResult {
   code: string;
   output: string;
   error: string | null;
+  stdin?: string;
 }
 
 export interface CodeEditorState {
@@ -46,13 +51,15 @@ export interface CodeEditorState {
   fontSize: number;
   editor: Monaco | null;
   executionResult: ExecutionResult | null;
+  stdin: string;
 
   setEditor: (editor: Monaco) => void;
   getCode: () => string;
   setLanguage: (language: string) => void;
   setTheme: (theme: string) => void;
   setFontSize: (fontSize: number) => void;
-  runCode: () => Promise<void>;
+  setStdin: (stdin: string) => void;
+  runCode: (userInput: string) => Promise<void>;
 }
 
 export interface Snippet {

@@ -1,22 +1,23 @@
+import { CodeEditorState } from "./../types/index";
 import { LANGUAGE_CONFIG } from "@/app/(root)/_constants";
 import { create } from "zustand";
 import { Monaco } from "@monaco-editor/react";
-import { CodeEditorState } from "@/types";
 
 const getInitialState = () => {
-  // if we're on the server we would like to default to python
+  // if we're on the server, return default values
   if (typeof window === "undefined") {
     return {
-      language: "python",
-      fontSize: 14,
+      language: "javascript",
+      fontSize: 16,
       theme: "vs-dark",
     };
   }
 
-  // if we're on the client, return values from local storage bcz local storage is browser api, It can't be accessed from server
-  const savedLanguage = localStorage.getItem("language") || "python";
-  const savedTheme = localStorage.getItem("theme") || "vs-dark";
-  const savedFontSize = localStorage.getItem("fontSize") || 14;
+  // if we're on the client, return values from local storage bc localStorage is a browser API.
+  const savedLanguage = localStorage.getItem("editor-language") || "javascript";
+  const savedTheme = localStorage.getItem("editor-theme") || "vs-dark";
+  const savedFontSize = localStorage.getItem("editor-font-size") || 16;
+
   return {
     language: savedLanguage,
     theme: savedTheme,
@@ -26,6 +27,7 @@ const getInitialState = () => {
 
 export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
   const initialState = getInitialState();
+
   return {
     ...initialState,
     output: "",
@@ -33,51 +35,107 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
     error: null,
     editor: null,
     executionResult: null,
+
+    getCode: () => get().editor?.getValue() || "",
+
     setEditor: (editor: Monaco) => {
-      const savedCode =
-        localStorage.getItem(`code-${get().language}`) ||
-        LANGUAGE_CONFIG[get().language].defaultCode;
-      editor.setValue(savedCode);
+      const savedCode = localStorage.getItem(`editor-code-${get().language}`);
+      if (savedCode) editor.setValue(savedCode);
+
       set({ editor });
     },
-    getCode: () => get().editor?.getValue() || "",
+
+    setTheme: (theme: string) => {
+      localStorage.setItem("editor-theme", theme);
+      set({ theme });
+    },
+
+    setFontSize: (fontSize: number) => {
+      localStorage.setItem("editor-font-size", fontSize.toString());
+      set({ fontSize });
+    },
+
     setLanguage: (language: string) => {
-      const currentCode = get().editor?.getValue() || "";
+      // Save current language code before switching
+      const currentCode = get().editor?.getValue();
       if (currentCode) {
-        localStorage.setItem(`code-${get().language}`, currentCode);
+        localStorage.setItem(`editor-code-${get().language}`, currentCode);
       }
-      localStorage.setItem("language", language);
+
+      localStorage.setItem("editor-language", language);
+
       set({
         language,
         output: "",
         error: null,
       });
     },
-    setTheme: (theme: string) => {
-      localStorage.setItem("theme", theme);
-      set({ theme });
-    },
-    setFontSize: (fontSize: number) => {
-      localStorage.setItem("fontSize", String(fontSize));
-      set({ fontSize });
-    },
-    runCode: async () => {
-      set({ isRunning: true, error: null });
-      const code = get().editor?.getValue();
+
+    runCode: async (userInput = "") => {
+      const { language, getCode } = get();
+      const code = getCode();
+
       if (!code) {
-        set({ isRunning: false, error: "No code to run" });
+        set({ error: "Please enter some code" });
         return;
       }
-      const languageConfig = LANGUAGE_CONFIG[get().language];
-      const response = await fetch("/api/execute", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}).toString(),
-      });
-      const executionResult = await response.json();
-      set({ isRunning: false, executionResult });
+
+      // Detect if the program requires input
+      const requiresInput =
+        code.includes("input") ||
+        code.includes("Scanner") ||
+        code.includes("cin");
+
+      set({ isRunning: true, error: null, output: "" });
+
+      try {
+        const runtime = LANGUAGE_CONFIG[language].pistonRuntime;
+        const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            language: runtime.language,
+            version: runtime.version,
+            files: [{ content: code }],
+            stdin: requiresInput ? userInput : "",
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.message) {
+          set({
+            error: data.message,
+            executionResult: { code, output: "", error: data.message },
+          });
+          return;
+        }
+
+        const output = data.run.output;
+
+        set({
+          output: output.trim(),
+          error: null,
+          executionResult: {
+            code,
+            output: output.trim(),
+            error: null,
+          },
+        });
+      } catch (error) {
+        set({
+          error: "Error running code",
+          executionResult: { code, output: "", error: "Error running code" },
+        });
+      } finally {
+        set({ isRunning: false });
+        //setNeedsInput(requiresInput); // Dynamically toggle input
+      }
     },
   };
 });
+
+export const getExecutionResult = () =>
+  useCodeEditorStore.getState().executionResult;
