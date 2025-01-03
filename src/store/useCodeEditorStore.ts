@@ -111,7 +111,8 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
       const requiresInput =
         code.includes("input") ||
         code.includes("Scanner") ||
-        code.includes("cin");
+        code.includes("cin") ||
+        code.includes("scanf");
 
       set({ isRunning: true, error: null, output: "" });
 
