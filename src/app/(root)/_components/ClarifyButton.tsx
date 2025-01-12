@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { JSX } from "react";
 import { ButtonsCard } from "@/components/ui/tailwindcss-buttons";
 
 interface ClarifyButtonProps {
