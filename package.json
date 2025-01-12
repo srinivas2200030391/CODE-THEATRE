@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.9.1",
-    "@google-cloud/language": "^6.5.0",
     "@google/generative-ai": "^0.21.0",
     "@monaco-editor/react": "^4.6.0",
     "@tabler/icons-react": "^3.28.1",
@@ -33,6 +32,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^9",
     "eslint-config-next": "15.1.0",
     "postcss": "^8",
