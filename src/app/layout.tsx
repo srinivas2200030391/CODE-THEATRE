@@ -30,12 +30,16 @@ export default function RootLayout({
       <html lang="en">
         <head>
           <title>Code-Theatre</title>
+
           <link rel="icon" href="/code-theatre.svg" />{" "}
           {/* Update favicon path */}
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-tr from-gray-900 to-gray-500 text-gray-100 flex flex-col`}>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-tr from-gray-900 to-gray-500 text-gray-100 flex flex-col`}
+        >
+          <ConvexClientProvider>
+            <div className="flex-1">{children}</div> {/* Ensures content takes full height */}
+          </ConvexClientProvider>
           <Footer />
         </body>
       </html>

@@ -1,18 +1,12 @@
-import React from 'react'
-import Header from './_components/Header'
-import EditorPanel from './_components/EditorPanel'
-import OutputPanel from './_components/OutputPanel'
+// app/page.tsx
+import React from 'react';
+import HeaderServer from './_components/HeaderServer';
+import ClientPage from './_components/ClientPage';
 
-export default function page() {
-  return (
-    <div className='min-h-screen'>
-      <div className="max-w-[1800px] mx-auto p-4">
-        <Header />
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'> 
-          <EditorPanel />
-          <OutputPanel />
-        </div>
-      </div>
-    </div>
-  )
+// This is a server component
+export default async function Page() {
+  const userData = await HeaderServer();
+  
+  // Render the ClientPage with the user data
+  return <ClientPage userData={userData} />;
 }
